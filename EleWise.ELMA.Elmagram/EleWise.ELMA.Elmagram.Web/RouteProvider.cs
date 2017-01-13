@@ -8,6 +8,7 @@ namespace EleWise.ELMA.Elmagram.Web
     public class RouteProvider : IRouteProvider
     {
         public const string AreaName = "EleWise.ELMA.Elmagram.Web";
+        public const string ImagesFolder = "~/Modules/" + AreaName + "/Content/Images/";
 
         public void GetRoutes(ICollection<RouteDescriptor> routes)
         {

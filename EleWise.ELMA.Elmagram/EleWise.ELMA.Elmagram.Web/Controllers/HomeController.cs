@@ -4,6 +4,7 @@ using System.Linq;
 using System.Web;
 using System.Web.Mvc;
 using EleWise.ELMA.Extensions;
+using EleWise.ELMA.Web.Content;
 using EleWise.ELMA.Web.Mvc.Extensions;
 using EleWise.ELMA.Web.Mvc.Attributes;
 using EleWise.ELMA.Web.Mvc.Controllers;
@@ -15,9 +16,8 @@ namespace EleWise.ELMA.Elmagram.Web.Controllers
     [Themed]
     public class HomeController : BaseController
     {
-        //
-        // GET: /EleWise.ELMA.Elmagram.Web/
-
+        [ContentItem(Name = "Elmagram",
+                    Image32 = RouteProvider.ImagesFolder + "x32/elmagram.png")]
         public ActionResult Index()
         {
             return View();
