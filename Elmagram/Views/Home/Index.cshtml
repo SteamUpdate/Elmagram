@@ -1,0 +1,159 @@
+@using Microsoft.AspNetCore.Http
+@using Microsoft.EntityFrameworkCore.Metadata.Internal
+@model Elmagram.Models.HomeViewModels.ChatModel
+
+@{
+    ViewData["Title"] = "ElmaGram";
+}
+
+<script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-2.2.0.min.js"></script>
+<script src="http://ajax.aspnetcdn.com/ajax/signalr/jquery.signalr-2.2.0.min.js"></script>
+<script src="/signalr/hubs"></script>
+<link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
+<div style="width: 100%; margin-top: 50px">
+<table width=100%>
+    <tr width=100%> 
+        <td style="background-color: white; width: 10%; border-bottom: 3px solid #e6e6e6; padding: 5px">            
+                  <input type="button" value="КОНТАКТЫ" style="background-color: #FFF; width: 100%; border: none;">
+                 
+        </td>        
+        <td style="background-color: white; width: 80%; border-left: 3px solid #e6e6e6; border-bottom: 3px solid #e6e6e6; padding: 5px">            
+                   <div id="Theme"></div>  
+        </td>
+    </tr>
+    <tr style="width:100%; height: 600px; vertical-align: top">
+        <td style="background-color: white; width: 20%; padding: 5px">
+            <div id="Contacts" style="height: 630px;overflow-y: scroll">
+                @foreach(var user in Model.Users)
+                {
+                    <div class="contactItem" id="contactItem">
+                        <div>@(user.FullName)</div>
+                    </div>
+                }
+            </div>            
+        </td>        
+        <td style="background-color: white; width: 80%; border-left: 3px solid #e6e6e6; position: relative;">            
+                <div id="ChatWindow" style="vertical-align: top; padding: 40px; overflow-y: scroll">
+                    
+                </div>
+                <div style="bottom: 0px; border-top: 3px solid #e6e6e6; width: 100%;">  
+                    <div id="InputMessageDiv" style="display:inline-block; width: 95%;"> 
+                        <textarea id="textArea" name="MessageText_input" style="border: none; margin-top: 5px; width: 100%; padding: 10px"></textarea>
+                    </div>
+                    <div id="SendButtonDiv" style="display:inline-block; align-content: center">
+                        <input type="button" id="sendButton" name="MessageText_input" style="width: 35px; height: 35px; border: none; background-color:transparent; background-image: url('/images/elmagram.png'); background-repeat: no-repeat;">
+                    </div>
+                </div>
+        </td>
+    </tr>
+</table>
+</div>
+
+
+
+<script type="text/javascript">
+    var yo = document.getElementsByClassName("contactItem");
+    for (var i = 0; i < yo.length; i++) {
+        yo[i].onclick = function () {
+           
+            var div = document.getElementById('Theme');
+            if (this.style.backgroundColor) {
+                this.style.backgroundColor = "";
+            }
+            else {
+                div.innerHTML = this.innerHTML;
+                this.style.backgroundColor = "#B0E0E6";
+            }
+        }
+    }
+
+    $.ajax({
+        url: '/chatroom/',
+        method: 'GET',
+        dataType: 'JSON',
+        success: addPostsList
+    });
+
+    function addPostsList(posts) {
+        $.each(posts, function (index) {
+            var post = posts[index];
+            addPost(post);
+        });
+    }
+
+    function addPost(post) {
+        console.log('New post from server: ', post.authorId);
+        if ('@Model.CurrentUserId'=== post.authorId) {
+            $("#ChatWindow").append('<p style="margin: 0;">' + post.dateString + '</p>');
+            $("#ChatWindow").append('<div class="comment dialog-right"><p>' + post.content + '</p></div>');
+        } else {
+            $("#ChatWindow").append('<p style="margin: 0;">' + post.dateString + " " + post.author + '</p>');
+            $("#ChatWindow").append('<div class="comment dialog-left"><p>' + post.content + '</p></div>');
+        }
+        $("#ChatWindow").scrollTop(1E10);
+    }
+
+    // Connect to the broadcaster on the server
+    var hub = $.connection.broadcaster;
+
+    // A function we will call from the server
+    $.connection.broadcaster.client.addChatMessage = addPost;
+
+    $("#sendButton").click(function () {
+        var post = {
+            content: $("#textArea").val()
+        };
+        $("#textArea").val("");
+        $.ajax({
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            type: 'POST',
+            url: '/chatroom/',
+            data: JSON.stringify(post),
+            dataType: 'json'
+        }).fail(function(e) {
+            console.log(e);
+        });
+    });
+
+    // This console.logs a lot of helpful debugging info!
+    $.connection.hub.logging = true;
+
+    // Let's connect to the hub!
+    $.connection.hub.start().done(function(signalr) {
+        console.log('Connected!');
+        console.log('SignalR object: ', signalr);
+        // The subscribe method lets you subscribe to a specific method on the server
+        // You could use this method to subscribe to a specific chatroom,
+        // listen for updates to a specific resource, or whatever you would want to "subscribe" to.
+        hub.server.subscribe("MainChatroom");
+    }).fail(function(error) {
+        // Just in case we fail to connect
+        console.log('Failed to start connection! Error: ', error);
+    });
+
+    $(document).ready(function () {
+        var selector = $('#InputMessageDiv').children('textarea');
+        var parentWidth = selector.parent().innerWidth();
+        var sendBtnSelector = $('#SendButtonDiv');
+        selector.css("max-width", parentWidth);
+        selector.css("width", parentWidth);
+        selector.css("align", "center");
+        selector.keypress(function (e) {
+            if (e.which === 13) {
+                sendBtnSelector.children().click();
+            }
+        });
+
+        var chatWindowSelector = $('#ChatWindow');
+        chatWindowSelector.css("height", chatWindowSelector.parent().innerHeight() - sendBtnSelector.outerHeight());
+        $('.contactItem').children().width($('.contactItem').width())
+        //debugger;
+        //var contactItem = $("<div class='contactItem'><div>Photo</div><div>"+  +"</div></div>");
+        //var contactsSelector = $('#Contacts');
+        //contactsSelector.append(contactItem);
+
+    });
+</script>
